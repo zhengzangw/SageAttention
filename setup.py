@@ -27,7 +27,7 @@ from torch.utils.cpp_extension import BuildExtension, CUDAExtension, CUDA_HOME
 HAS_SM80 = False
 HAS_SM86 = False
 HAS_SM89 = False
-HAS_SM90 = False
+HAS_SM90 = True # We only build for sm90 by default.
 HAS_SM120 = False
 
 # Supported NVIDIA GPU architectures.
@@ -67,54 +67,55 @@ def get_nvcc_cuda_version(cuda_dir: str) -> Version:
     return nvcc_cuda_version
 
 # Iterate over all GPUs on the current machine. Also you can modify this part to specify the architecture if you want to build for specific GPU architectures.
-compute_capabilities = set()
-device_count = torch.cuda.device_count()
-for i in range(device_count):
-    major, minor = torch.cuda.get_device_capability(i)
-    if major < 8:
-        warnings.warn(f"skipping GPU {i} with compute capability {major}.{minor}")
-        continue
-    compute_capabilities.add(f"{major}.{minor}")
+# compute_capabilities = set()
+# device_count = torch.cuda.device_count()
+# for i in range(device_count):
+#     major, minor = torch.cuda.get_device_capability(i)
+#     if major < 8:
+#         warnings.warn(f"skipping GPU {i} with compute capability {major}.{minor}")
+#         continue
+#     compute_capabilities.add(f"{major}.{minor}")
 
-nvcc_cuda_version = get_nvcc_cuda_version(CUDA_HOME)
-if not compute_capabilities:
-    raise RuntimeError("No GPUs found. Please specify the target GPU architectures or build on a machine with GPUs.")
-else:
-    print(f"Detect GPUs with compute capabilities: {compute_capabilities}")
+# nvcc_cuda_version = get_nvcc_cuda_version(CUDA_HOME)
+# if not compute_capabilities:
+#     raise RuntimeError("No GPUs found. Please specify the target GPU architectures or build on a machine with GPUs.")
+# else:
+#     print(f"Detect GPUs with compute capabilities: {compute_capabilities}")
 
-# Validate the NVCC CUDA version.
-if nvcc_cuda_version < Version("12.0"):
-    raise RuntimeError("CUDA 12.0 or higher is required to build the package.")
-if nvcc_cuda_version < Version("12.4") and any(cc.startswith("8.9") for cc in compute_capabilities):
-    raise RuntimeError(
-        "CUDA 12.4 or higher is required for compute capability 8.9.")
-if nvcc_cuda_version < Version("12.3") and any(cc.startswith("9.0") for cc in compute_capabilities):
-    raise RuntimeError(
-        "CUDA 12.3 or higher is required for compute capability 9.0.")
-if nvcc_cuda_version < Version("12.8") and any(cc.startswith("12.0") for cc in compute_capabilities):
-    raise RuntimeError(
-        "CUDA 12.8 or higher is required for compute capability 12.0.")
+# # Validate the NVCC CUDA version.
+# if nvcc_cuda_version < Version("12.0"):
+#     raise RuntimeError("CUDA 12.0 or higher is required to build the package.")
+# if nvcc_cuda_version < Version("12.4") and any(cc.startswith("8.9") for cc in compute_capabilities):
+#     raise RuntimeError(
+#         "CUDA 12.4 or higher is required for compute capability 8.9.")
+# if nvcc_cuda_version < Version("12.3") and any(cc.startswith("9.0") for cc in compute_capabilities):
+#     raise RuntimeError(
+#         "CUDA 12.3 or higher is required for compute capability 9.0.")
+# if nvcc_cuda_version < Version("12.8") and any(cc.startswith("12.0") for cc in compute_capabilities):
+#     raise RuntimeError(
+#         "CUDA 12.8 or higher is required for compute capability 12.0.")
 
 # Add target compute capabilities to NVCC flags.
-for capability in compute_capabilities:
-    if capability.startswith("8.0"):
-        HAS_SM80 = True
-        num = "80"
-    elif capability.startswith("8.6"):
-        HAS_SM86 = True
-        num = "86"
-    elif capability.startswith("8.9"):
-        HAS_SM89 = True
-        num = "89"
-    elif capability.startswith("9.0"):
-        HAS_SM90 = True
-        num = "90a" # need to use sm90a instead of sm90 to use wgmma ptx instruction.
-    elif capability.startswith("12.0"):
-        HAS_SM120 = True
-        num = "120" # need to use sm120a to use mxfp8/mxfp4/nvfp4 instructions.
-    NVCC_FLAGS += ["-gencode", f"arch=compute_{num},code=sm_{num}"]
-    if capability.endswith("+PTX"):
-        NVCC_FLAGS += ["-gencode", f"arch=compute_{num},code=compute_{num}"]
+# for capability in compute_capabilities:
+#     if capability.startswith("8.0"):
+#         HAS_SM80 = True
+#         num = "80"
+#     elif capability.startswith("8.6"):
+#         HAS_SM86 = True
+#         num = "86"
+#     elif capability.startswith("8.9"):
+#         HAS_SM89 = True
+#         num = "89"
+#     elif capability.startswith("9.0"):
+#         HAS_SM90 = True
+#         num = "90a" # need to use sm90a instead of sm90 to use wgmma ptx instruction.
+#     elif capability.startswith("12.0"):
+#         HAS_SM120 = True
+#         num = "120" # need to use sm120a to use mxfp8/mxfp4/nvfp4 instructions.
+num = "90a"
+NVCC_FLAGS += ["-gencode", f"arch=compute_{num},code=sm_{num}"]
+if capability.endswith("+PTX"):
+    NVCC_FLAGS += ["-gencode", f"arch=compute_{num},code=compute_{num}"]
 
 ext_modules = []
 
