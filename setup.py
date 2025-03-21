@@ -114,8 +114,8 @@ def get_nvcc_cuda_version(cuda_dir: str) -> Version:
 #         num = "120" # need to use sm120a to use mxfp8/mxfp4/nvfp4 instructions.
 num = "90a"
 NVCC_FLAGS += ["-gencode", f"arch=compute_{num},code=sm_{num}"]
-if capability.endswith("+PTX"):
-    NVCC_FLAGS += ["-gencode", f"arch=compute_{num},code=compute_{num}"]
+# if capability.endswith("+PTX"):
+#     NVCC_FLAGS += ["-gencode", f"arch=compute_{num},code=compute_{num}"]
 
 ext_modules = []
 
